@@ -2,13 +2,7 @@
   "version": 2,
   "functions": {
     "api/**": {
-      "includeFiles": [
-        "src/**",
-        "server.js",
-        "package.json",
-        "package-lock.json",
-        "uploads/**"
-      ],
+      "includeFiles": "src/**",
       "runtime": "nodejs18.x"
     }
   },
