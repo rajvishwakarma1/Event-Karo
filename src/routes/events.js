@@ -21,8 +21,14 @@ const {
 const router = express.Router();
 
 // Multer setup for poster uploads
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// Use /tmp on serverless (Vercel) as it's the only writable directory
+const uploadRoot = process.env.UPLOADS_ROOT || (process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', '..'));
+const uploadDir = path.join(uploadRoot, 'uploads');
+try {
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+} catch (e) {
+  console.warn('Upload dir init failed:', e?.message || e);
+}
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {

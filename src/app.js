@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const rsvpRoutes = require('./routes/rsvp');
@@ -13,7 +14,10 @@ const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+const uploadRoot = process.env.UPLOADS_ROOT || (process.env.VERCEL ? '/tmp' : path.join(__dirname, '..'));
+const staticUploads = path.join(uploadRoot, 'uploads');
+try { if (!fs.existsSync(staticUploads)) fs.mkdirSync(staticUploads, { recursive: true }); } catch (_) {}
+app.use('/uploads', express.static(staticUploads));
 
 // Request logging (development only)
 if (process.env.NODE_ENV !== 'production') {
