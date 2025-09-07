@@ -6,6 +6,12 @@ import type { LoginResponse, RegisterResponse, EventsResponse, Event, RSVP, RSVP
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const V: any = (import.meta as any)?.env || {};
 const apiBase: string = V.VITE_API_URL || '/api';
+if (V?.PROD && apiBase === '/api') {
+  // In production, '/api' only works if frontend and backend share the same domain (reverse proxy).
+  // Otherwise you must set VITE_API_URL to your backend URL.
+  // eslint-disable-next-line no-console
+  console.warn('[Event Karo] VITE_API_URL is not set; using relative /api which will 404 if API is on a different domain.');
+}
 
 const instance = axios.create({ baseURL: apiBase });
 
