@@ -1,0 +1,32 @@
+{
+  "users": [
+    { "name": "Olivia Organizer", "email": "olivia.org+1@example.com", "password": "Password123!", "role": "organizer" },
+    { "name": "Ethan Organizer", "email": "ethan.org+2@example.com", "password": "Password123!", "role": "organizer" },
+    { "name": "Ava Attendee", "email": "ava.att+1@example.com", "password": "Password123!", "role": "attendee" },
+    { "name": "Liam Attendee", "email": "liam.att+2@example.com", "password": "Password123!", "role": "attendee" }
+  ],
+  "events": [
+    { "title": "Tech Conference SF", "description": "A premier software conference.", "date": "{{futureDate7}}", "location": "San Francisco, CA", "seats": 200, "price": 199.99, "category": "conference", "tags": ["tech","conference"] },
+    { "title": "React Workshop", "description": "Hands-on workshop.", "date": "{{futureDate14}}", "location": "New York, NY", "seats": 40, "price": 49.00, "category": "workshop", "tags": ["react","frontend"] },
+    { "title": "Community Meetup", "description": "Monthly social meetup.", "date": "{{futureDate21}}", "location": "Austin, TX", "seats": 100, "price": 0, "category": "social", "tags": ["community","networking"] },
+    { "title": "5K Charity Run", "description": "Run for a cause.", "date": "{{futureDate30}}", "location": "Seattle, WA", "seats": 500, "price": 10, "category": "sports", "tags": ["run","charity"] }
+  ],
+  "rsvps": [
+    { "quantity": 1, "notes": "Solo attendee", "status": "pending" },
+    { "quantity": 2, "notes": "Bringing a friend", "status": "paid" },
+    { "quantity": 4, "notes": "Team", "status": "pending" }
+  ],
+  "edgeCases": {
+    "invalidEmails": ["not-an-email", "user@", "@domain.com"],
+    "shortPasswords": ["12345", "abc", "pass"],
+    "pastDates": ["2000-01-01T00:00:00.000Z"],
+    "negativePrices": [-10, -0.01],
+    "searchQueries": ["tech", "workshop", "free", "Austin", "Seattle"],
+    "filters": [
+      { "category": "conference" },
+      { "category": "workshop", "priceMin": 0, "priceMax": 100 },
+      { "location": "Austin" },
+      { "sort": "date" }
+    ]
+  }
+}

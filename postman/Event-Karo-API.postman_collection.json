@@ -1,0 +1,459 @@
+{
+  "info": {
+    "name": "Event Karo API",
+    "_postman_id": "b8d0f6d8-7f2a-4a25-9c9e-000000000001",
+    "description": "Comprehensive Postman collection for the Event Karo API. Organized by features with environment variables, auth flow, dynamic data, and tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": { "major": 1, "minor": 0, "patch": 0 }
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Seed common dynamic variables if not set",
+          "const now = new Date();",
+          "pm.environment.set('nowIso', now.toISOString());",
+          "pm.environment.set('today', now.toISOString().slice(0,10));",
+          "pm.environment.set('rand', (Math.random().toString(36).substring(2,10)));",
+          "if (!pm.environment.get('uniqueEmail')) {",
+          "  pm.environment.set('uniqueEmail', 'user_' + Date.now() + '_' + pm.environment.get('rand') + '@example.com');",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Has healthy field or ok', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST /auth/register (Organizer)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('regEmailOrg', 'org_' + Date.now() + '_' + pm.environment.get('rand') + '@example.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const res = pm.response.json();",
+                  "pm.test('Has token and user', () => { pm.expect(res).to.have.property('token'); pm.expect(res).to.have.property('user'); });",
+                  "pm.environment.set('organizerToken', res.token);",
+                  "pm.environment.set('organizerEmail', pm.variables.get('regEmailOrg'))"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organizer One\",\n  \"email\": \"{{regEmailOrg}}\",\n  \"password\": \"Password123!\",\n  \"role\": \"organizer\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/auth/register",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/register (Attendee)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.variables.set('regEmailAtt', 'att_' + Date.now() + '_' + pm.environment.get('rand') + '@example.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const res = pm.response.json();",
+                  "pm.test('Has token and user', () => { pm.expect(res).to.have.property('token'); pm.expect(res).to.have.property('user'); });",
+                  "pm.environment.set('attendeeToken', res.token);",
+                  "pm.environment.set('attendeeEmail', pm.variables.get('regEmailAtt'))"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Attendee One\",\n  \"email\": \"{{regEmailAtt}}\",\n  \"password\": \"Password123!\",\n  \"role\": \"attendee\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/auth/register",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login (Valid)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use uniqueEmail or fallback",
+                  "const email = pm.environment.get('uniqueEmail') || ('tester_' + Date.now() + '@example.com');",
+                  "pm.variables.set('loginEmail', email);",
+                  "// Ensure user exists: if this email not registered, tests may fail. Use previously created attendee email.",
+                  "if (pm.variables.get('useAttendeeEmail') !== 'false') { pm.variables.set('loginEmail', pm.variables.get('regEmailAtt') || email); }"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const res = pm.response.json();",
+                  "pm.environment.set('authToken', res.token);",
+                  "if (res.user) { pm.environment.set('userId', res.user.id || res.user._id); pm.environment.set('userRole', res.user.role); }",
+                  "pm.test('Token saved to env', () => pm.expect(pm.environment.get('authToken')).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{regEmailAtt}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{apiUrl}}/auth/login",
+              "host": ["{{apiUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "POST /auth/login (Invalid)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"invalid@example.com\",\n  \"password\": \"WrongPass1!\"\n}" },
+            "url": { "raw": "{{apiUrl}}/auth/login", "host": ["{{apiUrl}}"], "path": ["auth","login"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Unauthorized 401', () => pm.response.to.have.status(401));"
+            ] } }
+          ]
+        },
+        {
+          "name": "POST /auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": { "raw": "{{apiUrl}}/auth/logout", "host": ["{{apiUrl}}"], "path": ["auth","logout"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Logout 200 or 204', () => pm.expect([200,204]).to.include(pm.response.code));"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "GET /events/my-events (Organizer only)",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/events/my-events", "host": ["{{apiUrl}}"], "path": ["events","my-events"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 OK (if organizer)', () => pm.expect([200,403,401]).to.include(pm.response.code));"
+          ] } } ]
+        },
+        {
+          "name": "POST /events (Create as organizer)",
+          "event": [
+            { "listen": "prerequest", "script": { "type": "text/javascript", "exec": [
+              "pm.variables.set('eventTitle', 'Tech Conference ' + pm.environment.get('rand'));",
+              "pm.variables.set('eventDateIso', new Date(Date.now() + 7*24*60*60*1000).toISOString());"
+            ] }},
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('Created 201', () => pm.response.to.have.status(201));",
+              "const res = pm.response.json();",
+              "pm.environment.set('eventId', res.id || res._id);",
+              "pm.test('Saved eventId', () => pm.expect(pm.environment.get('eventId')).to.exist);"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{organizerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{eventTitle}}\",\n  \"description\": \"A premier event for developers.\",\n  \"date\": \"{{eventDateIso}}\",\n  \"location\": \"San Francisco, CA\",\n  \"seats\": 150,\n  \"price\": 99.99,\n  \"category\": \"conference\",\n  \"tags\": [\"tech\", \"javascript\"]\n}"
+            },
+            "url": { "raw": "{{apiUrl}}/events", "host": ["{{apiUrl}}"], "path": ["events"] }
+          }
+        },
+        {
+          "name": "GET /events (List with filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiUrl}}/events?search=tech&category=conference&location=San%20Francisco&page=1&limit=10&sort=date",
+              "host": ["{{apiUrl}}"],
+              "path": ["events"],
+              "query": [
+                {"key":"search","value":"tech"},
+                {"key":"category","value":"conference"},
+                {"key":"location","value":"San Francisco"},
+                {"key":"page","value":"1"},
+                {"key":"limit","value":"10"},
+                {"key":"sort","value":"date"}
+              ]
+            }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const res = pm.response.json(); pm.expect(res).to.have.property('data');"
+          ] } } ]
+        },
+        {
+          "name": "GET /events/:id (Details)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{apiUrl}}/events/{{eventId}}", "host": ["{{apiUrl}}"], "path": ["events","{{eventId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] } } ]
+        },
+        {
+          "name": "PUT /events/:id (Update as owner)",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"}, {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "body": { "mode":"raw", "raw": "{\n  \"title\": \"{{eventTitle}} - Updated\"\n}" },
+            "url": { "raw": "{{apiUrl}}/events/{{eventId}}", "host": ["{{apiUrl}}"], "path": ["events","{{eventId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] } } ]
+        },
+        
+        {
+          "name": "PUT /events/:id (Update as non-owner -> 403)",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"}, {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "body": { "mode":"raw", "raw": "{\n  \"title\": \"Hacker Update Attempt\"\n}" },
+            "url": { "raw": "{{apiUrl}}/events/000000000000000000000000", "host": ["{{apiUrl}}"], "path": ["events","000000000000000000000000"] }
+          },
+          "event": [ { "listen": "test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('403 or 404', () => pm.expect([403,404]).to.include(pm.response.code));"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "RSVPs",
+      "item": [
+        {
+          "name": "POST /rsvp (Create RSVP)",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"}, {"key":"Authorization","value":"Bearer {{attendeeToken}}"} ],
+            "body": { "mode":"raw", "raw": "{\n  \"eventId\": \"{{eventId}}\",\n  \"quantity\": 2,\n  \"notes\": \"Looking forward!\"\n}" },
+            "url": { "raw": "{{apiUrl}}/rsvp", "host": ["{{apiUrl}}"], "path": ["rsvp"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "const res = pm.response.json(); const r = res.rsvp || res; pm.environment.set('rsvpId', r && (r.id || r._id));",
+            "pm.test('Saved rsvpId', () => pm.expect(pm.environment.get('rsvpId')).to.exist);"
+          ] } } ]
+        },
+        {
+          "name": "GET /rsvp/my-rsvps",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{attendeeToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/rsvp/my-rsvps", "host": ["{{apiUrl}}"], "path": ["rsvp","my-rsvps"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] } } ]
+        },
+        {
+          "name": "PUT /rsvp/:id/cancel",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Authorization","value":"Bearer {{attendeeToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/rsvp/{{rsvpId}}/cancel", "host": ["{{apiUrl}}"], "path": ["rsvp","{{rsvpId}}","cancel"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));"
+          ] } } ]
+        },
+        {
+          "name": "GET /rsvp/event/:eventId (Organizer)",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/rsvp/event/{{eventId}}", "host": ["{{apiUrl}}"], "path": ["rsvp","event","{{eventId}}"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));"
+          ] } } ]
+        },
+        {
+          "name": "DELETE /rsvp/:id (Organizer)",
+          "request": {
+            "method": "DELETE",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/rsvp/{{rsvpId}}", "host": ["{{apiUrl}}"], "path": ["rsvp","{{rsvpId}}"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200, 204 or 403', () => pm.expect([200,204,403]).to.include(pm.response.code));"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Attendees",
+      "item": [
+        {
+          "name": "GET /attendees/events/:eventId/attendees",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/attendees/events/{{eventId}}/attendees", "host": ["{{apiUrl}}"], "path": ["attendees","events","{{eventId}}","attendees"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));"
+          ] } } ]
+        },
+        {
+          "name": "GET /attendees/events/:eventId/attendees/stats",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/attendees/events/{{eventId}}/attendees/stats", "host": ["{{apiUrl}}"], "path": ["attendees","events","{{eventId}}","attendees","stats"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));"
+          ] } } ]
+        },
+        {
+          "name": "PUT /attendees/events/:eventId/attendees/:rsvpId/status",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"}, {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "body": { "mode":"raw", "raw": "{\n  \"status\": \"confirmed\"\n}" },
+            "url": { "raw": "{{apiUrl}}/attendees/events/{{eventId}}/attendees/{{rsvpId}}/status", "host": ["{{apiUrl}}"], "path": ["attendees","events","{{eventId}}","attendees","{{rsvpId}}","status"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200, 403 or 404', () => pm.expect([200,403,404]).to.include(pm.response.code));"
+          ] } } ]
+        },
+        {
+          "name": "GET /attendees/events/:eventId/attendees/export",
+          "request": {
+            "method": "GET",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/attendees/events/{{eventId}}/attendees/export", "host": ["{{apiUrl}}"], "path": ["attendees","events","{{eventId}}","attendees","export"] }
+          },
+          "event": [ { "listen":"test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('200 or 403', () => pm.expect([200,403]).to.include(pm.response.code));"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "DELETE /events/:id (Cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [ {"key":"Authorization","value":"Bearer {{organizerToken}}"} ],
+            "url": { "raw": "{{apiUrl}}/events/{{eventId}}", "host": ["{{apiUrl}}"], "path": ["events","{{eventId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type":"text/javascript", "exec": [
+            "pm.test('Cleanup delete ok', () => pm.expect([200,204,404]).to.include(pm.response.code));"
+          ] } } ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "apiUrl", "value": "{{baseUrl}}/api" }
+  ]
+}

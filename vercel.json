@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**": {
+      "includeFiles": [
+        "src/**",
+        "server.js",
+        "package.json",
+        "package-lock.json",
+        "uploads/**"
+      ],
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/uploads/(.*)", "dest": "/uploads/$1" }
+  ]
+}

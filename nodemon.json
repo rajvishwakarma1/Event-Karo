@@ -1,0 +1,19 @@
+{
+  "watch": ["src", "server.js"],
+  "ignore": [
+    "postman/**",
+    "postman/reports/**",
+    "frontend/**",
+    "node_modules/**",
+    ".git/**",
+    "Dockerfile",
+    "docker-compose.yml",
+    "docker-compose.prod.yml",
+    "README.md"
+  ],
+  "ext": "js,json",
+  "env": {
+    "NODE_ENV": "development",
+    "PORT": "5000"
+  }
+}

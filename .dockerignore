@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Git
+.git/
+.gitignore
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage / test artifacts
+coverage/
+.tmp/
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Docs and misc
+README.md
+docs/
+postman/reports/
+
+# Build outputs
+build/
+dist/
+
+# Frontend directory (not needed for backend image)
+frontend/
