@@ -27,14 +27,20 @@ rsvpSchema.index(
 
 const RSVP = mongoose.model('RSVP', rsvpSchema);
 
-// Best-effort index migration: drop old strict unique index if it exists, then sync desired indexes
-// Ignore errors if index doesn't exist or collection not yet created
-RSVP.collection
-  .dropIndex('user_1_event_1')
-  .catch(() => {})
-  .finally(() => {
-  RSVP.syncIndexes().catch(() => {});
-  });
+// Best-effort index migration: guard against cold start without a ready connection
+try {
+  RSVP.collection
+    ?.dropIndex?.('user_1_event_1')
+    ?.catch(() => {})
+    ?.finally(() => {
+      RSVP.syncIndexes().catch(() => {});
+    });
+} catch (_) {
+  // If collection access throws synchronously, attempt a deferred sync later
+  setTimeout(() => {
+    try { RSVP.syncIndexes().catch(() => {}); } catch (_) {}
+  }, 0);
+}
 
 // Helpful index to list a user's bookings by latest first
 rsvpSchema.index({ user: 1, rsvpDate: -1, createdAt: -1 });
