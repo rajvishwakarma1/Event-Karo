@@ -23,6 +23,16 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
+// Root route (useful for deployed environments)
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Event Karo API',
+    status: 'ok',
+    health: '/api/health',
+    docs: 'README.md'
+  });
+});
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
