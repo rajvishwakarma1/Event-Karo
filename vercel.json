@@ -2,8 +2,7 @@
   "version": 2,
   "functions": {
     "api/**": {
-      "includeFiles": "src/**",
-      "runtime": "nodejs18.x"
+      "includeFiles": "src/**"
     }
   },
   "routes": [
